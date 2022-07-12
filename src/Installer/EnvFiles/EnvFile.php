@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Installer\EnvFiles;
+
+use App\Environment;
+use App\Radio\Configuration;
+
+use function __;
+
+final class EnvFile extends AbstractEnvFile
+{
+    /** @inheritDoc */
+    public static function getConfiguration(Environment $environment): array
+    {
+        static $config = null;
+
+        if (null === $config) {
+            $config = [
+                'COMPOSE_PROJECT_NAME' => [
+                    'name' => __(
+                        '(Docker Compose) All Docker containers are prefixed by this name. Do not change this after installation.'
+                    ),
+                    'default' => 'ambientcast',
+                    'required' => true,
+                ],
+                'COMPOSE_HTTP_TIMEOUT' => [
+                    'name' => __(
+                        '(Docker Compose) The amount of time to wait before a Docker Compose operation fails. Increase this on lower performance computers.'
+                    ),
+                    'default' => 300,
+                    'required' => true,
+                ],
+                'AMBIENTCAST_VERSION' => [
+                    'name' => __('Release Channel'),
+                    'options' => ['latest', 'stable'],
+                    'default' => 'latest',
+                    'required' => true,
+                ],
+                'AMBIENTCAST_HTTP_PORT' => [
+                    'name' => __('HTTP Port'),
+                    'description' => __(
+                        'The main port AmbientCast listens to for insecure HTTP connections.',
+                    ),
+                    'default' => 80,
+                ],
+                'AMBIENTCAST_HTTPS_PORT' => [
+                    'name' => __('HTTPS Port'),
+                    'description' => __(
+                        'The main port AmbientCast listens to for secure HTTPS connections.',
+                    ),
+                    'default' => 443,
+                ],
+                'AMBIENTCAST_SFTP_PORT' => [
+                    'name' => __('SFTP Port'),
+                    'description' => __(
+                        'The port AmbientCast listens to for SFTP file management connections.',
+                    ),
+                    'default' => 2022,
+                ],
+                'AMBIENTCAST_STATION_PORTS' => [
+                    'name' => __('Station Ports'),
+                    'description' => __(
+                        'The ports AmbientCast should listen to for station broadcasts and incoming DJ connections.',
+                    ),
+                    'default' => implode(',', Configuration::enumerateDefaultPorts()),
+                ],
+                'AMBIENTCAST_PUID' => [
+                    'name' => __('Docker User UID'),
+                    'description' => __(
+                        'Set the UID of the user running inside the Docker containers. Matching this with your host UID can fix permission issues.',
+                    ),
+                    'default' => 1000,
+                ],
+                'AMBIENTCAST_PGID' => [
+                    'name' => __('Docker User GID'),
+                    'description' => __(
+                        'Set the GID of the user running inside the Docker containers. Matching this with your host GID can fix permission issues.'
+                    ),
+                    'default' => 1000,
+                ],
+                'AMBIENTCAST_COMPOSE_PRIVILEGED' => [
+                    'name' => __('Advanced: Use Privileged Docker Settings'),
+                    'default' => true,
+                ],
+            ];
+        }
+
+        return $config;
+    }
+
+    public static function buildPathFromBase(string $baseDir): string
+    {
+        return $baseDir . DIRECTORY_SEPARATOR . '.env';
+    }
+}

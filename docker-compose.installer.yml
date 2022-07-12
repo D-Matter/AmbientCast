@@ -1,0 +1,9 @@
+services:
+  installer:
+    container_name: ambientcast_installer
+    image: 'dmatterhub/ambientcast:${AMBIENTCAST_VERSION:-latest}'
+    volumes:
+      - './:/installer'
+    restart: 'no'
+    entrypoint: docker_installer
+    command: install

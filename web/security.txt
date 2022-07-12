@@ -1,0 +1,7 @@
+# This is a security.txt file according to https://github.com/EdOverflow/security-txt
+
+# Our security policy
+Our detailed security policy can be found here: 
+https://github.com/D-Matter/AmbientCast/security/policy
+
+For legitimate security flaws or bugs relating to the security of AmbientCast, contact security@ambient.kwafgroup.com

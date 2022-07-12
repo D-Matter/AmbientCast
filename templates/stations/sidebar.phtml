@@ -1,0 +1,21 @@
+<?php
+/**
+ * @var \App\Entity\Station $station
+ * @var \App\Assets $assets
+ */
+
+$assets->addInlineJs($this->fetch('stations/sidebar.js', ['station' => $station]), 95);
+?>
+
+<div class="navdrawer-header">
+    <a class="navbar-brand px-0" href="<?=$router->fromHere('stations:profile:index') ?>">
+        <div><?=$this->e($station->getName()) ?></div>
+        <div class="xs" id="station-time" title="<?=$this->e(__('Station Time')) ?>">
+            <?=date('H:i:s T') ?>
+        </div>
+    </a>
+</div>
+
+<?php
+echo $this->fetch('partials/sidebar_menu', ['menu' => $menu, 'active' => $active]);
+?>

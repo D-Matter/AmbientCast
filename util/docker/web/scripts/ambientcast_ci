@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+if [ $(whoami) != 'ambientcast' ]; then
+    echo 'This script must be run as the "ambientcast" user. Rerunning...'
+    exec gosu ambientcast ambientcast_ci "$@"
+fi
+
+ambientcast_install || exit 1
+
+cd /var/ambientcast/www
+composer codeception-no-coverage

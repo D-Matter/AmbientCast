@@ -1,0 +1,20 @@
+#!/bin/bash
+
+source /etc/php/.version
+
+# Set up PHP config
+dockerize -template "/etc/php/${PHP_VERSION}/fpm/05-ambientcast.ini.tmpl:/etc/php/${PHP_VERSION}/fpm/conf.d/05-ambientcast.ini" \
+  -template "/etc/php/${PHP_VERSION}/fpm/www.conf.tmpl:/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf" \
+  cp /etc/php/${PHP_VERSION}/fpm/conf.d/05-ambientcast.ini /etc/php/${PHP_VERSION}/cli/conf.d/05-ambientcast.ini
+
+# Wait for services to spin up.
+gosu ambientcast php /var/ambientcast/www/bin/uptime_wait || exit 1
+
+# Initialize before running FPM
+gosu ambientcast ambientcast_cli ambientcast:setup:initialize || exit 1
+
+# Run initial Acme check
+gosu ambientcast ambientcast_cli ambientcast:acme:get-certificate || true
+
+# Run PHP-FPM
+exec /usr/sbin/php-fpm${PHP_VERSION} -F --fpm-config /etc/php/${PHP_VERSION}/fpm/php-fpm.conf -c /etc/php/${PHP_VERSION}/fpm/

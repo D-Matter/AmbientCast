@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+supervisorctl restart nginx
+
+ambientcast_cli ambientcast:internal:on-ssl-renewal

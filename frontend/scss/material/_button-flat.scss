@@ -1,0 +1,15 @@
+[class*='btn-flat'],
+[class*='btn-outline'] {
+  background-color: transparent;
+  box-shadow: none;
+
+  &.active,
+  &:active {
+    box-shadow: none;
+  }
+
+  &.disabled,
+  &:disabled {
+    background-color: transparent;
+  }
+}

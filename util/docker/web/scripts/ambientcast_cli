@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [ `whoami` != 'ambientcast' ]; then
+    exec gosu ambientcast ambientcast_cli "$@"
+fi
+
+cd /var/ambientcast/www
+exec php bin/console "$@"

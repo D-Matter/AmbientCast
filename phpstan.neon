@@ -1,0 +1,26 @@
+includes:
+	- phpstan-baseline.neon
+	- vendor/phpstan/phpstan-doctrine/extension.neon
+
+parameters:
+    level: 8
+
+    checkMissingIterableValueType: false
+
+    paths:
+        - src
+        - bin
+        - web
+
+    bootstrapFiles:
+        - ./util/phpstan.php
+
+    scanDirectories:
+       - ./vendor/zircote/swagger-php/src/Annotations
+
+    universalObjectCratesClasses:
+        - App\Session\NamespaceInterface
+        - App\View
+
+    parallel:
+        maximumNumberOfProcesses: 1

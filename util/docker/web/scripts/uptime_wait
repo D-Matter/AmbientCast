@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+gosu ambientcast php /var/ambientcast/www/bin/uptime_wait || exit 1
+
+exec "$@"

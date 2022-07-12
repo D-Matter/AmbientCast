@@ -1,0 +1,173 @@
+upstream php-fpm-internal {
+    server unix:/var/run/php-fpm-internal.sock;
+}
+
+upstream php-fpm-www {
+    server unix:/var/run/php-fpm-www.sock;
+}
+
+# Internal connection handler for PubSub and internal API calls
+server {
+    listen 127.0.0.1:6010;
+
+    root /var/ambientcast/www/web;
+    index index.php;
+
+    server_name localhost;
+
+    # Default clean URL routing
+    location / {
+        try_files $uri @clean_url;
+    }
+
+    location @clean_url {
+        rewrite ^(.*)$ /index.php last;
+    }
+
+    location ~ ^/index\.php(/|$) {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+
+        fastcgi_pass php-fpm-internal;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        include fastcgi_params;
+
+        fastcgi_read_timeout 600;
+        fastcgi_buffering off;
+
+        internal;
+    }
+
+    location ~ /pub/([^\/]+)$ {
+        nchan_publisher;
+        nchan_channel_group "ambientcast_nowplaying";
+        nchan_channel_id $1;
+
+        nchan_message_buffer_length 1;
+        nchan_message_timeout 16s;
+    }
+}
+
+server {
+    listen 80;
+    listen 443 default_server http2 ssl;
+
+    ssl_certificate        /var/ambientcast/acme/ssl.crt;
+    ssl_certificate_key    /var/ambientcast/acme/ssl.key;
+
+    ssl_protocols TLSv1.3 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ecdh_curve secp521r1:secp384r1;
+    ssl_ciphers EECDH+AESGCM:EECDH+AES256;
+
+    ssl_session_cache shared:TLS:2m;
+    ssl_buffer_size 4k;
+
+    root /var/ambientcast/www/web;
+    index index.php;
+
+    server_name localhost;
+
+    add_header X-XSS-Protection 1;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy no-referrer-when-downgrade;
+
+    # LetsEncrypt handling
+    location /.well-known/acme-challenge {
+        alias /var/ambientcast/acme/challenges;
+        try_files $uri =404;
+    }
+
+    # Serve a static version of the nowplaying data for non-PHP-blocking delivery.
+    location /api/nowplaying_static {
+        expires 10s;
+        add_header Access-Control-Allow-Origin *;
+
+        alias /var/ambientcast/www_tmp/nowplaying;
+        try_files $uri =404;
+    }
+
+    # Default clean URL routing
+    location / {
+        try_files $uri @clean_url;
+    }
+
+    location @clean_url {
+        rewrite ^(.*)$ /index.php last;
+    }
+
+    # Set up caching for static assets.
+    location /static {
+        add_header Access-Control-Allow-Origin *;
+    }
+
+    location /static/uploads {
+        rewrite ^(.+)\.(?:\w+)\.(js|css|png|jpg)$ $1.$2 last;
+
+        alias /var/ambientcast/uploads;
+        try_files $uri =404;
+    }
+
+    location /static/dist {
+        expires 365d;
+    }
+    location /static/webpack_dist {
+        expires 365d;
+    }
+
+    location ~ ^/index\.php(/|$) {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+
+        # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+        fastcgi_pass php-fpm-www;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        include fastcgi_params;
+
+        fastcgi_read_timeout {{ default .Env.NGINX_TIMEOUT "1800" }};
+        fastcgi_buffering off;
+
+        internal;
+    }
+
+    # Return 404 for all other php files not matching the front controller
+    location ~ \.php$ {
+        return 404;
+    }
+
+    # pub/sub endpoints
+    location ~ /api/live/nowplaying/([^\/]+)$ {
+        nchan_access_control_allow_origin "*";
+
+        nchan_subscriber;
+
+        nchan_channel_group "ambientcast_nowplaying";
+        nchan_channel_id "$1";
+        nchan_channel_id_split_delimiter ",";
+
+        nchan_subscriber_first_message -1;
+    }
+
+    # deny access to .htaccess files, if Apache's document root
+    # concurs with nginx's one
+    location ~ /\.ht {
+        deny all;
+    }
+
+    # Internal handlers used by the application to perform X-Accel-Redirect's for higher performance.
+    location /internal/backups/ {
+        internal;
+        alias /var/ambientcast/backups/;
+    }
+
+    location /internal/stations/ {
+        internal;
+        alias /var/ambientcast/stations/;
+    }
+
+    include /var/ambientcast/stations/*/config/nginx.conf;
+
+    include /etc/nginx/ambientcast.conf.d/*.conf;
+}

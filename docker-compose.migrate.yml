@@ -1,0 +1,5 @@
+services:
+  web:
+    volumes:
+      - /var/ambientcast/stations:/var/ambientcast/stations
+      - /var/ambientcast/backups:/var/ambientcast/backups
